@@ -1,0 +1,172 @@
+"type","topic","col2","col3","col4","col5","col6"
+# DO NOT REMOVE THE FIRST LINE!
+# Example register definition file.
+#
+# You need to define a Poller and then one or more References for that poller.
+# The Poller will 'poll' the slaveid and bring back 1 or more registers/bits.
+# The References must then match up with the polled range to define the topic for each.
+#################################################################################
+# Poller-object
+# Columns:
+# type, topic, slaveid, reference, size, functioncode, rate
+#  
+# Possible values for columns:
+# type: poll
+# topic: any string without spaces
+# slaveid: integer 1 to 254
+# reference: integer 0 to 65535 (Modbus references are as transmitted on the wire.
+# In the traditional numbering scheme these would have been called offsets. E. g. to
+# read 400020 you would use reference 20.)
+# size: integer 0 to 65535 (No. of registers to poll, value must not exceed the limits of Modbus of course)
+# functionscode: coil, input_status, holding_register, input_register
+# rate: float 0.0 to some really big number
+#
+# functionscode equivalents: coil, input_status, holding_register, input_register
+#                              1        2                3                4
+#
+# Example poller-object:
+# poll,someTopic,1,2,5,coil,1.0
+# Will poll states of 5 coils from slave device 1 once a second, starting at coil 2.
+#
+#################################################################################
+# Reference-Object
+# Columns:
+# type, topic, reference, rw, data type, scaling factor
+# type: ref
+# topic: any string without spaces
+# reference: integer 0 to 65535 (This is the modbus offset and should match the poller ref)
+# rw: r, w or rw
+# data type (registers only): uint16, float32BE, float32LE, uint32BE, uint32LE, string (defaults to uint16)
+# scaling factor (registers only): a factor by which the read value is multiplied before publishing to mqtt. At the moment this only works when reading from Modbus.
+#
+# Example reference-object:
+# ref,light0,2,rw
+# The state of coil 2 will be published to mqtt with the topic modbus/someTopic/state/light0
+# if column 3 contains an 'r'.
+# If you publish a value (in case of a coil: True or False) to modbus/someTopic/set/light0 and
+# column 3 contains a 'w', the new state will be written to the slave device.
+# 
+#################################################################################
+# Columns:
+# type, topic, slaveid, reference, size, functioncode, rate
+# type, topic, reference, rw, data type,        
+#
+
+# Vacation days remaining
+# This is actually RW
+poll,vacation,1,205,1,holding_register,3600.0
+ref,days_remaining,205,r,int16
+
+# Heating circuit 1
+# DHW setpoint, 0=economy, 1=normal, 2=comfort
+# Heating curve inclination
+# Heating curve offset/adjustment
+# These are actually RW
+poll,setting,1,207,10,holding_register,3600.0
+ref,dhw_setpoint,207,r,uint16
+ref,curve_inclination,212,r,int16,0.1
+ref,curve_adjustment,213,r,int16,0.1
+#ref,decrease_primary_flow,214,r,int16,0.1
+#ref,decrease_room_temperature,215,r,int16,0.1
+
+# Compressor enabled/blocked
+poll,compressor,1,232,1,holding_register,60.0
+ref,enabled,232,r,bool
+
+# Temperatures [degC]
+# Upper tank temperature
+# Lower tank temperature
+# Condenser input temperature
+# Outdoor temperature
+# Circuit 1 primary temperature
+poll,temperature,1,600,12,holding_register,60.0
+ref,upper_tank,601,r,int16,0.1
+#ref,middle_tank,602,r,int16,0.1
+ref,lower_tank,603,r,int16,0.1
+#ref,condenser_out,604,r,int16,0.1
+ref,condenser_in,605,r,int16,0.1
+ref,outdoor,606,r,int16,0.1
+ref,circuit1,607,r,int16,0.1
+#ref,circuit2,608,r,int16,0.1
+
+# Currents, phases 1, 2, 3 [A]
+poll,current,1,612,3,holding_register,10.0
+ref,L1,612,r,uint16,0.1
+ref,L2,613,r,uint16,0.1
+ref,L3,614,r,uint16,0.1
+
+# Heatpump temperatures
+# Brine output
+# Brine input
+# Flow input
+# Flow output
+# Discharge temperature
+# Suction gas temperature
+# Heat pump relay status, bit 0=compressor on, bit 3=brine pump on
+poll,heatpump,1,630,21,holding_register,60.0
+ref,brine_temperature_out,630,r,int16,0.1
+ref,brine_temperature_in,631,r,int16,0.1
+ref,flow_temperature_in,632,r,int16,0.1
+ref,flow_temperature_out,634,r,int16,0.1
+ref,discharge_temperature,635,r,int16,0.1
+ref,suction_gas_temperature,636,r,int16,0.1
+ref,relays,650,r,uint16
+
+# Status, alarms
+# Word1 Status: bit 0=alarm active, 1=high current, 3=shut off, 4=extra DHW, 5=circuit 1 heat on, 
+#     bit 6=circuit 2 heat on, 7=lower tank heat pump, 8=upper tank heat pump, 9=tariff:heater blocked, 
+#     bit 10=tariff: heat pump blocked 
+# Word2 Alarms: bit 0=upper tank temperature, 1=middle tank temp, 2=lower tank temp, 3=outdoor temp,
+#     bit 4=circuit 1 temp, 5=return temp, 6=circuit 2 temp, 7=room 1 temp, 8=room 2 temp, 9=flow alarm,
+#     bit 10=security thermostat, 11=comm relay card, 12=comm heat pump, 13=blown fuse, 14=compressor type
+poll,alarm,1,550,2,holding_register,60.0
+ref,word1,550,r,uint16
+ref,word2,551,r,uint16
+
+# Circuit 1 primary flow temperature setpoint [degC]
+poll,setpoint1,1,559,1,holding_register,60.0
+ref,temperature,559,r,int16,0.1
+
+# Heatpump 1 alarms
+poll,heatpump1_alarm,1,656,4,holding_register,60.0
+ref,alarm1,656,r,uint16
+ref,alarm2,657,r,uint16
+ref,alarm3,658,r,uint16
+ref,alarm4,659,r,uint16
+
+# Relay bits, I/O bits
+poll,io_bits,1,617,5,holding_register,30.0
+ref,word1,617,r,uint16
+ref,word2,620,r,uint16
+ref,word3,621,r,uint16
+
+# Heat pump 1 compressor operation time
+poll,heatpump1_time,1,663,4,holding_register,3600.0
+ref,operating_hours_high,663,r,uint16
+ref,operating_hours_low,664,r,uint16
+ref,operating_mins_24h,665,r,uint16
+ref,starts_24h,666,r,uint16
+
+# Info word
+poll,info,1,690,1,holding_register,60.0
+ref,info,690,r,uint16
+
+# Heat pump 1 allowed (1=allowed)
+poll,heatpump1_allowed,1,61521,1,holding_register,60.0
+ref,allowed,61521,r,bool
+
+# Heat pump 1 status
+poll,heatpump1_status,1,62017,1,holding_register,30.0
+ref,status,62017,r,uint16
+
+# Heating system 1 info
+poll,heating_system1,1,62006,11,holding_register,60.0
+ref,radiator_water,62006,r,int16,0.1
+ref,setpoint_primary_flow,62007,r,int16,0.1
+ref,temperature_primary_flow,62011,r,int16,0.1
+ref,temperature_return,62015,r,int16,0.1
+ref,DHW_circulation,62016,r,int16
+
+# 0=Off, 1=Vacation, 2=Night reduction, 3=On (normal)
+poll,heating_system1_status,1,62246,1,holding_register,60.0
+ref,status,62246,r,uint16
